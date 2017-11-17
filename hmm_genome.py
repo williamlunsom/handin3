@@ -27,19 +27,31 @@ def translate_indices_to_observations(indices):
 
 
 def translate_path_to_indices(path):
-    return list(map(lambda x: int(x), path))
+#    return list(map(lambda x: int(x), path))
+    return path
 
 
 #def translate_indices_to_path(indices):
 #    mapping = ['C', 'C', 'C', 'N', 'R', 'R', 'R']
 #    return ''.join([mapping[i] for i in indices])
 
+# def translate_indices_to_path_codon_full(indices):
+#     res = ""
+#     for i in indices:
+#         if i == 0:
+#             res += "N"
+#         elif (0 < i < 75):
+#             res += "C"
+#         else:
+#             res += "R"
+#     return res
+
 def translate_indices_to_path_codon(indices):
     res = ""
     for i in indices:
         if i == 0:
             res += "N"
-        elif (0 < i < 75):
+        elif (0 < i < 34):
             res += "C"
         else:
             res += "R"
@@ -126,8 +138,8 @@ def compute_w_log(model, x):
         for k in range(0, K):
             for j in range(0, K):
                 w[k, n] = max(w[k, n], log(model.emission_probs[k, x[n]]) + w[j, n-1] + log(model.trans_probs[j, k]))
-        if i > 30:
-            estimate = ((time.time()-t)/31)*(N-n)
+        if i > 50:
+            estimate = ((time.time()-t)/51)*(N-n)
             rest = estimate % 60**2
             hours = (estimate - rest)/(60**2)
             minutes =rest/60
@@ -187,6 +199,52 @@ def compute_accuracy(true_ann, pred_ann):
 #    return result
 
 
+# def translate_annotation_to_indices_codon_full(ann, x):
+#     codon_dict = codon_dicts_full()
+#     i = 0
+#     x = x.lower()
+#     res = []
+#     while i < len(ann)-1:
+#         try:
+#             #check for non-coding:
+#             if ann[i] == "N":
+#                 res.append(0)
+#                 i += 1
+#             elif ann[i] == "C":
+#                 #check for start of forward coding sequence:
+#                 if (ann[i-1] == "N") or (ann[i-1] == "R"):
+#                     res.extend([codon_dict.forward_start_dict[x[i:i+3]]]*3)
+#                     i += 3
+#                 #check for stop of forward coding sequence:
+#                 elif (ann[i+1] == "N") or (ann[i+1] == "R"):
+#                     res.extend([codon_dict.forward_stop_dict[x[i:i+3]]]*3)
+#                     i += 3
+#                 else:
+#                     #res.extend([8]*3)
+#                     res.extend([codon_dict.forward_combo_dict[x[i:i+3]]]*3)
+#                     i += 3
+#             else:
+#                 #check for stop of backward coding sequence
+#                 if (ann[i-1] == "N") or (ann[i-1] == "C"):
+#                     res.extend([codon_dict.bacward_stop_dict[x[i:i+3]]]*3)
+#                     i += 3
+#                 #check for start of backward coding sequence
+#                 elif (ann[i+1] == "N") or (ann[i+1] == "C"):
+#                     res.extend([codon_dict.bacward_start_dict[x[i:i+3]]]*3)
+#                     i += 3
+#                 else:
+#                     #res.extend([78]*3)
+#                     res.extend([codon_dict.backward_combo_dict[x[i:i+3]]]*3)
+#                     i += 3
+#         except KeyError:
+#             break
+#     #match length by copying last index
+#     length_diff = len(ann) - len(res)
+#     res.extend([res[i-1]]*length_diff)
+#     assert(len(res) == len(ann))
+
+#     return res
+
 def translate_annotation_to_indices_codon(ann, x):
     codon_dict = codon_dicts()
     i = 0
@@ -201,34 +259,32 @@ def translate_annotation_to_indices_codon(ann, x):
             elif ann[i] == "C":
                 #check for start of forward coding sequence:
                 if (ann[i-1] == "N") or (ann[i-1] == "R"):
-                    res.extend([codon_dict.forward_start_dict[x[i:i+3]]]*3)
+                    res.extend([codon_dict.forward_start_dict[x[i:i+3]]])
                     i += 3
                 #check for stop of forward coding sequence:
                 elif (ann[i+1] == "N") or (ann[i+1] == "R"):
-                    res.extend([codon_dict.forward_stop_dict[x[i:i+3]]]*3)
+                    res.extend([codon_dict.forward_stop_dict[x[i:i+3]]])
                     i += 3
                 else:
-                    #res.extend([8]*3)
-                    res.extend([codon_dict.forward_combo_dict[x[i:i+3]]]*3)
+                    res.extend(codon_dict.forward_coding_sequence)
                     i += 3
             else:
                 #check for stop of backward coding sequence
                 if (ann[i-1] == "N") or (ann[i-1] == "C"):
-                    res.extend([codon_dict.bacward_stop_dict[x[i:i+3]]]*3)
+                    res.extend([codon_dict.bacward_stop_dict[x[i:i+3]]])
                     i += 3
                 #check for start of backward coding sequence
                 elif (ann[i+1] == "N") or (ann[i+1] == "C"):
-                    res.extend([codon_dict.bacward_start_dict[x[i:i+3]]]*3)
+                    res.extend([codon_dict.bacward_start_dict[x[i:i+3]]])
                     i += 3
                 else:
-                    #res.extend([78]*3)
-                    res.extend([codon_dict.backward_combo_dict[x[i:i+3]]]*3)
+                    res.extend(codon_dict.backward_coding_sequence)
                     i += 3
         except KeyError:
             break
-    #match length by copying last index
+    #match length by copying last index (if necessary)
     length_diff = len(ann) - len(res)
-    res.extend([res[i-1]]*length_diff)
+    res.extend([res[-1]]*length_diff)
     assert(len(res) == len(ann))
 
     return res
@@ -236,21 +292,31 @@ def translate_annotation_to_indices_codon(ann, x):
 
 class codon_dicts:
     def __init__(self):
-        self.forward_start_dict = {'atg': 1,'atc': 2,'ata': 3,'att': 4,'gtg': 5,'gtt': 6,'ttg': 7}
-        self.forward_stop_dict = {'tag': 72,'taa': 73,'tga': 74}
-        self.bacward_start_dict = {'cat': 142,'aat': 143,'cac': 144,'caa': 145,'tat': 146,'cag': 147,'gat': 148}
-        self.bacward_stop_dict = {'cta': 75,'tta': 76,'tca': 77}
+        self.forward_start_dict = {'atg': [1,2,3],'atc': [4,5,6],'ata': [7,8,9],'att': [10,11,12],'gtg': [13,14,15],'gtt': [16,17,18],'ttg': [19,20,21]}
+        self.forward_coding_sequence = [22,23,24]
+        self.forward_stop_dict = {'tag': [25,26,27],'taa': [28,29,30],'tga': [31,32,33]}
+        self.bacward_stop_dict = {'cta': [34,35,36],'tta': [37,38,39],'tca': [40,41,42]}
+        self.backward_coding_sequence = [43,44,45]
+        self.bacward_start_dict = {'cat': [46,47,48],'aat': [49,50,51],'cac': [52,53,54],'caa': [55,56,57],'tat': [58,59,60],'cag': [61,62,63],'gat': [64,65,66]}
+        
 
-        letters = ['a','c','g','t']
+# class codon_dicts_full:
+#     def __init__(self):
+#         self.forward_start_dict = {'atg': 1,'atc': 2,'ata': 3,'att': 4,'gtg': 5,'gtt': 6,'ttg': 7}
+#         self.forward_stop_dict = {'tag': 72,'taa': 73,'tga': 74}
+#         self.bacward_start_dict = {'cat': 142,'aat': 143,'cac': 144,'caa': 145,'tat': 146,'cag': 147,'gat': 148}
+#         self.bacward_stop_dict = {'cta': 75,'tta': 76,'tca': 77}
 
-        combinations = []
-        for combo in itertools.product(letters, repeat=3):
-            combinations.append(''.join(combo))
+#         letters = ['a','c','g','t']
 
-        forward_indices = range(8,len(combinations)+8)
-        backward_indices = range(78,len(combinations)+78)
-        self.forward_combo_dict = dict(zip(combinations, forward_indices))
-        self.backward_combo_dict = dict(zip(combinations, backward_indices))
+#         combinations = []
+#         for combo in itertools.product(letters, repeat=3):
+#             combinations.append(''.join(combo))
+
+#         forward_indices = range(8,len(combinations)+8)
+#         backward_indices = range(78,len(combinations)+78)
+#         self.forward_combo_dict = dict(zip(combinations, forward_indices))
+#         self.backward_combo_dict = dict(zip(combinations, backward_indices))
 
 
 class hmm:
@@ -268,7 +334,7 @@ if __name__=="__main__":
     true_ann1 = read_fasta_file('./data-handin3/true-ann1.fa')
     true_ann2 = read_fasta_file('./data-handin3/true-ann2.fa')
 
-    end_point = 500
+    end_point = -1
     #end_point = -1
 
     true_ann1_cut = true_ann1['true-ann1'][:end_point]
@@ -280,8 +346,8 @@ if __name__=="__main__":
     z1 = translate_annotation_to_indices_codon(true_ann1_cut, x1)
     z2 = translate_annotation_to_indices_codon(true_ann2_cut, x2)
 
-    K = 147
-    #K = 23
+    #K = 147
+    K = 67
     D = 4
 
     print('Training...')
