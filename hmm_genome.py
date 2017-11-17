@@ -135,9 +135,12 @@ def compute_w_log(model, x):
     i = 0
     for n in range(1, N):
         i += 1
+
         for k in range(0, K):
-            for j in range(0, K):
-                w[k, n] = max(w[k, n], log(model.emission_probs[k, x[n]]) + w[j, n-1] + log(model.trans_probs[j, k]))
+            vec = np.log(model.emission_probs[k, x[n]]) + w[:, n-1] + np.log(model.trans_probs[:, k])
+            max_vec = np.maximum(w[k,n], vec)
+            w[k,n] = max_vec[-1]
+                
         if i > 50:
             estimate = ((time.time()-t)/51)*(N-n)
             rest = estimate % 60**2
@@ -335,7 +338,7 @@ if __name__=="__main__":
     true_ann2 = read_fasta_file('./data-handin3/true-ann2.fa')
 
     end_point = -1
-    #end_point = -1
+    end_point = 10000
 
     true_ann1_cut = true_ann1['true-ann1'][:end_point]
     true_ann2_cut = true_ann2['true-ann2'][:end_point]  
