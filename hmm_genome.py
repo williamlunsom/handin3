@@ -169,7 +169,7 @@ def translate_annotation_to_indices_codon(ann, x):
     i = 0
     x = x.lower()
     res = []
-    while i < len(ann)-1:
+    while i < len(ann)-3:
         try:
             #check for non-coding:
             if ann[i] == "N":
@@ -315,6 +315,7 @@ if __name__=="__main__":
     start_file = 1
     num_files = 5
     end_index = -1
+    end_index = 501
 
     """ Cross validation on first 5 genomes """
     print("Starting cross validation.")
