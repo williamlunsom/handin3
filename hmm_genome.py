@@ -315,7 +315,7 @@ if __name__=="__main__":
     start_file = 1
     num_files = 5
     end_index = -1
-    end_index = 501
+
 
     """ Cross validation on first 5 genomes """
     print("Starting cross validation.")
