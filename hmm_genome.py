@@ -45,6 +45,7 @@ def count_transitions_and_emissions(K, D, x, z):
     emission_count = make_table(K, D)
     observations_indices = translate_observations_to_indices(x)
     path_idices = z
+
     for (index,observation) in enumerate(observations_indices):
         from_path_index = path_idices[index-1]
         to_path_index = path_idices[index]
@@ -55,6 +56,7 @@ def count_transitions_and_emissions(K, D, x, z):
         
         transition_count[from_path_index,to_path_index] += 1
         emission_count[from_path_index,to_emission_index] += 1
+
     return transition_count, emission_count
 
 
@@ -160,6 +162,8 @@ def compute_accuracy(true_ann, pred_ann):
                for i in range(len(true_ann))) / len(true_ann)
 
 
+
+
 def translate_annotation_to_indices_codon(ann, x):
     codon_dict = codon_dicts()
     i = 0
@@ -174,11 +178,11 @@ def translate_annotation_to_indices_codon(ann, x):
             elif ann[i] == "C":
                 #check for start of forward coding sequence:
                 if (ann[i-1] == "N") or (ann[i-1] == "R"):
-                    res.extend([codon_dict.forward_start_dict[x[i:i+3]]])
+                    res.extend(codon_dict.forward_start_dict[x[i:i+3]])
                     i += 3
                 #check for stop of forward coding sequence:
-                elif (ann[i+1] == "N") or (ann[i+1] == "R"):
-                    res.extend([codon_dict.forward_stop_dict[x[i:i+3]]])
+                elif (ann[i+3] == "N") or (ann[i+3] == "R"):
+                    res.extend(codon_dict.forward_stop_dict[x[i:i+3]])
                     i += 3
                 else:
                     res.extend(codon_dict.forward_coding_sequence)
@@ -186,11 +190,11 @@ def translate_annotation_to_indices_codon(ann, x):
             else:
                 #check for stop of backward coding sequence
                 if (ann[i-1] == "N") or (ann[i-1] == "C"):
-                    res.extend([codon_dict.bacward_stop_dict[x[i:i+3]]])
+                    res.extend(codon_dict.bacward_stop_dict[x[i:i+3]])
                     i += 3
                 #check for start of backward coding sequence
-                elif (ann[i+1] == "N") or (ann[i+1] == "C"):
-                    res.extend([codon_dict.bacward_start_dict[x[i:i+3]]])
+                elif (ann[i+3] == "N") or (ann[i+3] == "C"):
+                    res.extend(codon_dict.bacward_start_dict[x[i:i+3]])
                     i += 3
                 else:
                     res.extend(codon_dict.backward_coding_sequence)
