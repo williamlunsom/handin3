@@ -3,6 +3,7 @@ import numpy as np
 import time
 import itertools
 import os
+import pandas as pd
 
 def log(x):
     if x == 0:
@@ -126,6 +127,7 @@ def compute_w_log(model, x):
             i = 0
             t = time.time()
     print("\n")            
+
     return w
 
 
@@ -160,8 +162,6 @@ def compute_accuracy(true_ann, pred_ann):
         return 0.0
     return sum(1 if true_ann[i] == pred_ann[i] else 0 
                for i in range(len(true_ann))) / len(true_ann)
-
-
 
 
 def translate_annotation_to_indices_codon(ann, x):
@@ -325,21 +325,30 @@ if __name__=="__main__":
     # Count transitions and emmissions
     transition_counts, emission_counts = count_multiple_transitions_and_emissions(genomes, true_annotations, K, D)
     # Build and train models
-    cross_models = train_cross_validation_models(transition_counts, emission_counts, K, D)
+    #cross_models = train_cross_validation_models(transition_counts, emission_counts, K, D)
     # Predict annotations
-    predicted_annotations = compute_cross_validation_annotations(cross_models, genomes)
+    #predicted_annotations = compute_cross_validation_annotations(cross_models, genomes)
     # Write predictions to file
-    write_fasta_files(predicted_annotations, "cross_ann", "cross-val-annotations")
+    #write_fasta_files(predicted_annotations, "cross_ann", "cross-val-annotations")
 
 
     """ Prediction on the 5 unannotated genomes """
-    print("Predicting annotations on unknown genomes.")
+    #print("Predicting annotations on unknown genomes.")
     # Train model on first 5 genomes
     total_trans_counts = np.sum(transition_counts, 0)
     total_emiss_counts = np.sum(emission_counts, 0)
     best_model = training_by_counting(K, D, total_trans_counts, total_emiss_counts)
-    start_file = 6
-    unknown_genomes = load_fasta_data(data_folder, start_file, num_files, "genome", end_index)
+    #start_file = 6
+    #unknown_genomes = load_fasta_data(data_folder, start_file, num_files, "genome", end_index)
+    # Save probabillity matrixes to excel
+    em_df = pd.DataFrame(best_model.emission_probs, columns = ["A", "C", "G", "T"])
+    tr_df = pd.DataFrame(best_model.trans_probs)
+    writer = pd.ExcelWriter('probabillities.xlsx')
+    em_df.to_excel(writer,'Emission_probs')
+    tr_df.to_excel(writer,'Transition_probs')
+    writer.save()
+    np.save("emission_probs", best_model.emission_probs)
+    np.save("trans_probs", best_model.trans_probs)
     # Make predictions on the new genomes
-    predicted_unknown_annotations = compute_multiple_annotations(best_model, unknown_genomes)
-    write_fasta_files(predicted_unknown_annotations, "pred-ann", "predicted-annotations", start_file)
+    #predicted_unknown_annotations = compute_multiple_annotations(best_model, unknown_genomes)
+    #write_fasta_files(predicted_unknown_annotations, "pred-ann", "predicted-annotations", start_file)
